@@ -13,8 +13,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewController = MainViewController(state: state, overlayController: overlayController)
         let window = NSWindow(contentViewController: viewController)
         window.title = "Custom Mac Pointer"
+        window.appearance = NSAppearance(named: .aqua)
         window.setContentSize(NSSize(width: 430, height: 430))
         window.minSize = NSSize(width: 390, height: 390)
+        window.maxSize = NSSize(width: 430, height: 430)
+        window.styleMask.remove(.resizable)
         window.center()
         window.makeKeyAndOrderFront(nil)
         self.window = window

@@ -26,8 +26,9 @@ final class MainViewController: NSViewController {
 
     override func loadView() {
         view = NSView()
+        view.appearance = NSAppearance(named: .aqua)
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        view.layer?.backgroundColor = NSColor(calibratedWhite: 0.94, alpha: 1).cgColor
     }
 
     override func viewDidLoad() {
@@ -54,6 +55,7 @@ final class MainViewController: NSViewController {
 
         let title = NSTextField(labelWithString: "Custom Mac Pointer")
         title.font = .systemFont(ofSize: 20, weight: .semibold)
+        title.textColor = .labelColor
 
         previewView.translatesAutoresizingMaskIntoConstraints = false
 

@@ -65,16 +65,14 @@ enum BurekLibrary {
     private static func candidateDirectories() -> [URL] {
         var directories: [URL] = []
 
-        if let url = Bundle.module.url(forResource: "Bureks", withExtension: nil) {
-            directories.append(url)
-        }
-
-        if let resourceURL = Bundle.module.resourceURL {
-            directories.append(contentsOf: resourceDirectories(in: resourceURL))
-        }
-
         if let resourceURL = Bundle.main.resourceURL {
             directories.append(contentsOf: resourceDirectories(in: resourceURL))
+        }
+
+        if let executableDirectory = Bundle.main.executableURL?.deletingLastPathComponent() {
+            let siblingResourceBundle = executableDirectory
+                .appendingPathComponent("CustomMacPointer_CustomMacPointer.bundle", isDirectory: true)
+            directories.append(contentsOf: resourceDirectories(in: siblingResourceBundle))
         }
 
         var seen = Set<URL>()

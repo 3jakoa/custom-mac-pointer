@@ -23,7 +23,7 @@ platform = "darwin"
 [[actions]]
 name = "package + launch Burek app"
 icon = "run"
-command = "sh scripts/package_app.sh && open \"build/Burek Mac Pointer.app\""
+command = "sh scripts/package_app.sh && open -n \"build/Burek Mac Pointer.app\""
 platform = "darwin"
 
 [[actions]]
@@ -35,5 +35,5 @@ platform = "darwin"
 [[actions]]
 name = "run app"
 icon = "run"
-command = "open \"build/Burek Mac Pointer.app\""
+command = "sh scripts/package_app.sh && open -n \"build/Burek Mac Pointer.app\""
 platform = "darwin"

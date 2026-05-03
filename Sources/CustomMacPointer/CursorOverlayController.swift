@@ -10,6 +10,8 @@ final class CursorOverlayController {
     private var localClickMonitor: Any?
     private var settings = CursorSettings()
     private var isCursorHidden = false
+    private var wasMouseButtonDown = false
+    private var lastRegisteredClickTime: TimeInterval = 0
     var onPointerClick: (() -> Void)?
 
     var isRunning: Bool {
@@ -62,10 +64,12 @@ final class CursorOverlayController {
         hideSystemCursor()
         panel.orderFrontRegardless()
         positionPanel()
+        wasMouseButtonDown = isMouseButtonDown()
+        lastRegisteredClickTime = 0
         installClickMonitors()
 
         timer = Timer.scheduledTimer(
-            timeInterval: 1.0 / 120.0,
+            timeInterval: 1.0 / 240.0,
             target: self,
             selector: #selector(timerFired),
             userInfo: nil,
@@ -98,6 +102,19 @@ final class CursorOverlayController {
 
     @objc private func timerFired() {
         positionPanel()
+
+        let isButtonDown = isMouseButtonDown()
+        if isButtonDown && !wasMouseButtonDown {
+            registerPointerClick()
+        }
+        wasMouseButtonDown = isButtonDown
+    }
+
+    private func isMouseButtonDown() -> Bool {
+        NSEvent.pressedMouseButtons != 0 ||
+            CGEventSource.buttonState(.hidSystemState, button: .left) ||
+            CGEventSource.buttonState(.hidSystemState, button: .right) ||
+            CGEventSource.buttonState(.hidSystemState, button: .center)
     }
 
     private func installClickMonitors() {
@@ -106,12 +123,12 @@ final class CursorOverlayController {
         let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] _ in
             Task { @MainActor in
-                self?.onPointerClick?()
+                self?.registerPointerClick()
             }
         }
 
         localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
-            self?.onPointerClick?()
+            self?.registerPointerClick()
             return event
         }
     }
@@ -126,6 +143,13 @@ final class CursorOverlayController {
             NSEvent.removeMonitor(localClickMonitor)
             self.localClickMonitor = nil
         }
+    }
+
+    private func registerPointerClick() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastRegisteredClickTime > 0.04 else { return }
+        lastRegisteredClickTime = now
+        onPointerClick?()
     }
 
     private func hideSystemCursor() {

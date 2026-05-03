@@ -6,8 +6,11 @@ final class CursorOverlayController {
     private let panel: NSPanel
     private let imageView: NSImageView
     private var timer: Timer?
+    private var globalClickMonitor: Any?
+    private var localClickMonitor: Any?
     private var settings = CursorSettings()
     private var isCursorHidden = false
+    var onPointerClick: (() -> Void)?
 
     var isRunning: Bool {
         timer != nil
@@ -36,6 +39,11 @@ final class CursorOverlayController {
 
     func update(settings: CursorSettings) {
         self.settings = settings
+        guard settings.canRenderPointer else {
+            imageView.image = nil
+            return
+        }
+
         let image = CursorImageFactory.image(for: settings)
         let size = image.size
 
@@ -50,9 +58,11 @@ final class CursorOverlayController {
 
     func start() {
         guard timer == nil else { return }
+        guard settings.canRenderPointer else { return }
         hideSystemCursor()
         panel.orderFrontRegardless()
         positionPanel()
+        installClickMonitors()
 
         timer = Timer.scheduledTimer(
             timeInterval: 1.0 / 120.0,
@@ -69,6 +79,7 @@ final class CursorOverlayController {
     func stop() {
         timer?.invalidate()
         timer = nil
+        removeClickMonitors()
         panel.orderOut(nil)
         showSystemCursor()
     }
@@ -87,6 +98,34 @@ final class CursorOverlayController {
 
     @objc private func timerFired() {
         positionPanel()
+    }
+
+    private func installClickMonitors() {
+        removeClickMonitors()
+
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] _ in
+            Task { @MainActor in
+                self?.onPointerClick?()
+            }
+        }
+
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+            self?.onPointerClick?()
+            return event
+        }
+    }
+
+    private func removeClickMonitors() {
+        if let globalClickMonitor {
+            NSEvent.removeMonitor(globalClickMonitor)
+            self.globalClickMonitor = nil
+        }
+
+        if let localClickMonitor {
+            NSEvent.removeMonitor(localClickMonitor)
+            self.localClickMonitor = nil
+        }
     }
 
     private func hideSystemCursor() {

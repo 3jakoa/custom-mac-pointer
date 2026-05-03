@@ -1,17 +1,15 @@
 import AppKit
-import UniformTypeIdentifiers
 
 final class MainViewController: NSViewController {
     private let state: AppState
     private let overlayController: CursorOverlayController
 
     private let previewView = CursorPreviewView()
-    private let importButton = NSButton(title: "Import PNG", target: nil, action: nil)
-    private let startButton = NSButton(title: "Start Pointer", target: nil, action: nil)
+    private let startButton = NSButton(title: "Start Burek", target: nil, action: nil)
     private let stopButton = NSButton(title: "Stop Pointer", target: nil, action: nil)
-    private let sizeSlider = NSSlider(value: 48, minValue: 16, maxValue: 160, target: nil, action: nil)
-    private let sizeValueLabel = NSTextField(labelWithString: "48 px")
-    private let fileLabel = NSTextField(labelWithString: "No PNG imported")
+    private let sizeSlider = NSSlider(value: 72, minValue: 32, maxValue: 180, target: nil, action: nil)
+    private let sizeValueLabel = NSTextField(labelWithString: "72 px")
+    private let libraryLabel = NSTextField(labelWithString: "No Bureks bundled")
     private let statusLabel = NSTextField(labelWithString: "Pointer overlay is off")
 
     init(state: AppState, overlayController: CursorOverlayController) {
@@ -28,7 +26,7 @@ final class MainViewController: NSViewController {
         view = NSView()
         view.appearance = NSAppearance(named: .aqua)
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor(calibratedWhite: 0.94, alpha: 1).cgColor
+        view.layer?.backgroundColor = NSColor(red: 0.98, green: 0.86, blue: 0.58, alpha: 1).cgColor
     }
 
     override func viewDidLoad() {
@@ -36,6 +34,12 @@ final class MainViewController: NSViewController {
         buildLayout()
         wireActions()
         refreshUI()
+
+        overlayController.onPointerClick = { [weak self] in
+            guard let self else { return }
+            self.state.advanceBorek()
+            self.statusLabel.stringValue = self.runningStatusText()
+        }
 
         state.onChange = { [weak self] settings in
             self?.previewView.settings = settings
@@ -47,38 +51,58 @@ final class MainViewController: NSViewController {
     private func buildLayout() {
         let stack = NSStackView()
         stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 14
-        stack.edgeInsets = NSEdgeInsets(top: 22, left: 22, bottom: 22, right: 22)
+        stack.alignment = .centerX
+        stack.spacing = 16
+        stack.edgeInsets = NSEdgeInsets(top: 28, left: 24, bottom: 24, right: 24)
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
 
-        let title = NSTextField(labelWithString: "Custom Mac Pointer")
-        title.font = .systemFont(ofSize: 20, weight: .semibold)
-        title.textColor = .labelColor
+        let title = NSTextField(labelWithString: "Burek Mac Pointer")
+        title.font = .systemFont(ofSize: 28, weight: .heavy)
+        title.textColor = NSColor(red: 0.32, green: 0.16, blue: 0.07, alpha: 1)
+        title.alignment = .center
+
+        let subtitle = NSTextField(labelWithString: "freshly baked cursor chaos")
+        subtitle.font = .systemFont(ofSize: 13, weight: .semibold)
+        subtitle.textColor = NSColor(red: 0.05, green: 0.31, blue: 0.22, alpha: 1)
+        subtitle.alignment = .center
 
         previewView.translatesAutoresizingMaskIntoConstraints = false
 
-        fileLabel.font = .systemFont(ofSize: 12)
-        fileLabel.textColor = .secondaryLabelColor
-        fileLabel.lineBreakMode = .byTruncatingMiddle
-        fileLabel.maximumNumberOfLines = 1
+        libraryLabel.font = .systemFont(ofSize: 12)
+        libraryLabel.textColor = NSColor(red: 0.45, green: 0.25, blue: 0.12, alpha: 1)
+        libraryLabel.alignment = .center
+        libraryLabel.lineBreakMode = .byTruncatingMiddle
+        libraryLabel.maximumNumberOfLines = 1
 
         statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.textColor = NSColor(red: 0.36, green: 0.19, blue: 0.09, alpha: 1)
+        statusLabel.alignment = .center
 
-        let sizeRow = NSStackView(views: [label("Size"), sizeSlider, sizeValueLabel])
+        sizeValueLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        sizeValueLabel.textColor = NSColor(red: 0.36, green: 0.19, blue: 0.09, alpha: 1)
+        sizeValueLabel.alignment = .right
+
+        let sizeTitle = NSTextField(labelWithString: "Burek size")
+        sizeTitle.font = .systemFont(ofSize: 12, weight: .semibold)
+        sizeTitle.textColor = NSColor(red: 0.45, green: 0.25, blue: 0.12, alpha: 1)
+
+        let sizeRow = NSStackView(views: [sizeTitle, sizeSlider, sizeValueLabel])
         sizeRow.orientation = .horizontal
         sizeRow.alignment = .centerY
         sizeRow.spacing = 10
 
         let buttonRow = NSStackView(views: [startButton, stopButton])
         buttonRow.orientation = .horizontal
-        buttonRow.spacing = 8
+        buttonRow.alignment = .centerY
+        buttonRow.spacing = 12
+
+        configureButton(startButton, color: NSColor(red: 0.13, green: 0.45, blue: 0.32, alpha: 1))
+        configureButton(stopButton, color: NSColor(red: 0.72, green: 0.24, blue: 0.11, alpha: 1))
 
         stack.addArrangedSubview(title)
-        stack.addArrangedSubview(importButton)
-        stack.addArrangedSubview(fileLabel)
+        stack.addArrangedSubview(subtitle)
+        stack.addArrangedSubview(libraryLabel)
         stack.addArrangedSubview(previewView)
         stack.addArrangedSubview(sizeRow)
         stack.addArrangedSubview(buttonRow)
@@ -91,17 +115,17 @@ final class MainViewController: NSViewController {
             stack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             previewView.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -44),
             previewView.heightAnchor.constraint(equalToConstant: 220),
-            importButton.widthAnchor.constraint(equalToConstant: 120),
-            sizeSlider.widthAnchor.constraint(equalToConstant: 250),
-            startButton.widthAnchor.constraint(equalToConstant: 118),
-            stopButton.widthAnchor.constraint(equalToConstant: 118)
+            sizeRow.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -44),
+            sizeSlider.widthAnchor.constraint(equalToConstant: 210),
+            sizeValueLabel.widthAnchor.constraint(equalToConstant: 54),
+            startButton.widthAnchor.constraint(equalToConstant: 140),
+            stopButton.widthAnchor.constraint(equalToConstant: 140),
+            startButton.heightAnchor.constraint(equalToConstant: 36),
+            stopButton.heightAnchor.constraint(equalToConstant: 36)
         ])
     }
 
     private func wireActions() {
-        importButton.target = self
-        importButton.action = #selector(importImage)
-
         sizeSlider.target = self
         sizeSlider.action = #selector(sizeChanged)
 
@@ -114,57 +138,23 @@ final class MainViewController: NSViewController {
 
     private func refreshUI() {
         let settings = state.settings
-        sizeSlider.doubleValue = settings.size
+        sizeSlider.doubleValue = Double(settings.size)
         previewView.settings = settings
         overlayController.update(settings: settings)
         refreshControls(for: settings)
     }
 
     private func refreshControls(for settings: CursorSettings) {
+        libraryLabel.stringValue = libraryText(for: settings)
         sizeValueLabel.stringValue = "\(Int(settings.size.rounded())) px"
-        startButton.isEnabled = settings.importedImage != nil && !overlayController.isRunning
+        startButton.isEnabled = settings.canRenderPointer && !overlayController.isRunning
         stopButton.isEnabled = overlayController.isRunning
     }
 
-    private func label(_ text: String) -> NSTextField {
-        let label = NSTextField(labelWithString: text)
-        label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.textColor = .secondaryLabelColor
-        return label
-    }
-
-    @objc private func importImage() {
-        let panel = NSOpenPanel()
-        panel.title = "Choose pointer PNG"
-        panel.message = "Choose a PNG image to use as your pointer."
-        panel.allowedContentTypes = [.png]
-        panel.allowsMultipleSelection = false
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.resolvesAliases = true
-
-        runOpenPanel(panel) { [weak self] response in
-            guard let self else { return }
-            guard response == .OK else {
-                fileLabel.stringValue = "No PNG imported"
-                return
-            }
-
-            guard let url = panel.url else {
-                presentAlert(title: "Import failed", message: "No PNG file was selected.")
-                return
-            }
-
-            guard let image = NSImage(contentsOf: url), image.isValid, image.size.width > 0, image.size.height > 0 else {
-                presentAlert(title: "Import failed", message: "macOS could not decode that PNG. Try another file.")
-                return
-            }
-
-            var settings = state.settings
-            settings.importedImage = image
-            fileLabel.stringValue = url.lastPathComponent
-            state.settings = settings
-        }
+    private func configureButton(_ button: NSButton, color: NSColor) {
+        button.bezelStyle = .rounded
+        button.font = .systemFont(ofSize: 14, weight: .semibold)
+        button.contentTintColor = color
     }
 
     @objc private func sizeChanged() {
@@ -174,14 +164,17 @@ final class MainViewController: NSViewController {
     }
 
     @objc private func startPointer() {
-        guard state.settings.importedImage != nil else {
-            presentAlert(title: "Import a PNG first", message: "Choose a PNG image before starting the pointer overlay.")
+        guard state.settings.canRenderPointer else {
+            presentAlert(
+                title: "No pointer artwork",
+                message: "Add Burek images to the bundled Bureks folder before starting the pointer overlay."
+            )
             return
         }
 
         overlayController.start()
         refreshControls(for: state.settings)
-        statusLabel.stringValue = "Pointer overlay is running"
+        statusLabel.stringValue = runningStatusText()
     }
 
     @objc private func stopPointer() {
@@ -190,12 +183,17 @@ final class MainViewController: NSViewController {
         statusLabel.stringValue = "Pointer overlay is off"
     }
 
-    private func runOpenPanel(_ panel: NSOpenPanel, completion: @escaping (NSApplication.ModalResponse) -> Void) {
-        if let window = view.window {
-            panel.beginSheetModal(for: window, completionHandler: completion)
-        } else {
-            completion(panel.runModal())
+    private func libraryText(for settings: CursorSettings) -> String {
+        guard !settings.boreks.isEmpty else {
+            return "No Bureks bundled yet"
         }
+
+        let activeName = settings.activeBorek?.name ?? "Burek"
+        return "\(settings.boreks.count) Bureks loaded - \(activeName)"
+    }
+
+    private func runningStatusText() -> String {
+        "Burek pointer is running"
     }
 
     private func presentAlert(title: String, message: String) {

@@ -2,7 +2,7 @@ import AppKit
 
 enum CursorImageFactory {
     static func image(for settings: CursorSettings) -> NSImage {
-        let size = max(16, min(160, settings.size))
+        let size = max(32, min(180, settings.size))
         let image = NSImage(size: NSSize(width: size, height: size))
         image.lockFocus()
 
@@ -10,10 +10,10 @@ enum CursorImageFactory {
         NSColor.clear.setFill()
         NSRect(origin: .zero, size: image.size).fill()
 
-        if let importedImage = settings.importedImage {
-            importedImage.draw(
-                in: aspectFitRect(for: importedImage.size, inside: NSRect(x: 0, y: 0, width: size, height: size)),
-                from: NSRect(origin: .zero, size: importedImage.size),
+        if let activeImage = settings.activeImage {
+            activeImage.draw(
+                in: aspectFitRect(for: activeImage.size, inside: NSRect(x: 0, y: 0, width: size, height: size)),
+                from: NSRect(origin: .zero, size: activeImage.size),
                 operation: .sourceOver,
                 fraction: 1
             )

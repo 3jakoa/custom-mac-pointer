@@ -222,6 +222,16 @@ final class BurekSizeSlider: NSControl {
 
     override var acceptsFirstResponder: Bool { true }
 
+    override func becomeFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
+    }
+
+    override func resignFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         let trackRect = NSRect(x: 9, y: bounds.midY - 2.5, width: max(0, bounds.width - 18), height: 5)
         let radius: CGFloat = 2.5
@@ -255,9 +265,17 @@ final class BurekSizeSlider: NSControl {
         let thumbPath = NSBezierPath(ovalIn: NSRect(x: thumbCenter.x - 9, y: thumbCenter.y - 9, width: 18, height: 18))
         thumbPath.lineWidth = 2
         thumbPath.stroke()
+
+        if window?.firstResponder === self {
+            NSColor.keyboardFocusIndicatorColor.setStroke()
+            let focusPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 6, yRadius: 6)
+            focusPath.lineWidth = 2
+            focusPath.stroke()
+        }
     }
 
     override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
         updateValue(with: event)
     }
 
@@ -272,6 +290,65 @@ final class BurekSizeSlider: NSControl {
         value = (minValue + progress * (maxValue - minValue)).rounded()
         sendAction(action, to: target)
     }
+
+    override func keyDown(with event: NSEvent) {
+        let step: CGFloat = event.modifierFlags.contains(.shift) ? 10 : 1
+        switch event.keyCode {
+        case 124, 126:
+            increment(by: step)
+        case 123, 125:
+            increment(by: -step)
+        case 115:
+            setValueAndNotify(minValue)
+        case 119:
+            setValueAndNotify(maxValue)
+        default:
+            super.keyDown(with: event)
+        }
+    }
+
+    private func increment(by delta: CGFloat) {
+        setValueAndNotify(value + delta)
+    }
+
+    private func setValueAndNotify(_ newValue: CGFloat) {
+        value = newValue.rounded()
+        sendAction(action, to: target)
+    }
+
+    override func isAccessibilityElement() -> Bool {
+        true
+    }
+
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        .slider
+    }
+
+    override func accessibilityLabel() -> String? {
+        "Burek size"
+    }
+
+    override func accessibilityValue() -> Any? {
+        Int(value.rounded())
+    }
+
+    override func accessibilityMinValue() -> Any? {
+        Int(minValue.rounded())
+    }
+
+    override func accessibilityMaxValue() -> Any? {
+        Int(maxValue.rounded())
+    }
+
+    override func accessibilityPerformIncrement() -> Bool {
+        increment(by: 1)
+        return true
+    }
+
+    override func accessibilityPerformDecrement() -> Bool {
+        increment(by: -1)
+        return true
+    }
 }
 
 final class BurekModeControl: NSControl {
@@ -283,6 +360,18 @@ final class BurekModeControl: NSControl {
 
     override var intrinsicContentSize: NSSize {
         NSSize(width: NSView.noIntrinsicMetric, height: 30)
+    }
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func becomeFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
+    }
+
+    override func resignFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -309,12 +398,63 @@ final class BurekModeControl: NSControl {
 
         drawOption("Floating", in: NSRect(x: 3, y: 0, width: optionWidth, height: bounds.height), active: mode == .floating)
         drawOption("Pointer", in: NSRect(x: 5 + optionWidth, y: 0, width: optionWidth, height: bounds.height), active: mode == .pointer)
+
+        if window?.firstResponder === self {
+            NSColor.keyboardFocusIndicatorColor.setStroke()
+            let focusPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 9, yRadius: 9)
+            focusPath.lineWidth = 2
+            focusPath.stroke()
+        }
     }
 
     override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
         let location = convert(event.locationInWindow, from: nil)
         mode = location.x > bounds.midX ? .pointer : .floating
         sendAction(action, to: target)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        switch event.keyCode {
+        case 123, 126:
+            setModeAndNotify(.floating)
+        case 124, 125:
+            setModeAndNotify(.pointer)
+        default:
+            switch event.charactersIgnoringModifiers {
+            case " ", "\r":
+                setModeAndNotify(mode == .floating ? .pointer : .floating)
+            default:
+                super.keyDown(with: event)
+            }
+        }
+    }
+
+    private func setModeAndNotify(_ newMode: CursorMode) {
+        guard mode != newMode else { return }
+        mode = newMode
+        sendAction(action, to: target)
+    }
+
+    override func isAccessibilityElement() -> Bool {
+        true
+    }
+
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        .radioGroup
+    }
+
+    override func accessibilityLabel() -> String? {
+        "Mode"
+    }
+
+    override func accessibilityValue() -> Any? {
+        mode == .floating ? "Floating" : "Pointer"
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        setModeAndNotify(mode == .floating ? .pointer : .floating)
+        return true
     }
 
     private func drawOption(_ text: String, in rect: NSRect, active: Bool) {
@@ -357,10 +497,22 @@ final class BurekButton: NSControl {
         NSSize(width: NSView.noIntrinsicMetric, height: 38)
     }
 
+    override var acceptsFirstResponder: Bool { true }
+
     override var isEnabled: Bool {
         didSet {
             needsDisplay = true
         }
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
+    }
+
+    override func resignFirstResponder() -> Bool {
+        needsDisplay = true
+        return true
     }
 
     override func updateTrackingAreas() {
@@ -391,6 +543,7 @@ final class BurekButton: NSControl {
 
     override func mouseDown(with event: NSEvent) {
         guard isEnabled else { return }
+        window?.makeFirstResponder(self)
         isPressing = true
         needsDisplay = true
     }
@@ -402,6 +555,20 @@ final class BurekButton: NSControl {
         needsDisplay = true
         if inside {
             sendAction(action, to: target)
+        }
+    }
+
+    override func keyDown(with event: NSEvent) {
+        guard isEnabled, let characters = event.charactersIgnoringModifiers else {
+            super.keyDown(with: event)
+            return
+        }
+
+        switch characters {
+        case " ", "\r":
+            sendAction(action, to: target)
+        default:
+            super.keyDown(with: event)
         }
     }
 
@@ -448,6 +615,13 @@ final class BurekButton: NSControl {
             at: CGPoint(x: rect.midX - textSize.width / 2, y: rect.midY - textSize.height / 2 + yOffset),
             withAttributes: attributes
         )
+
+        if window?.firstResponder === self {
+            NSColor.keyboardFocusIndicatorColor.setStroke()
+            let focusPath = NSBezierPath(roundedRect: rect.insetBy(dx: 2, dy: 2), xRadius: 7, yRadius: 7)
+            focusPath.lineWidth = 2
+            focusPath.stroke()
+        }
     }
 
     private var textColor: NSColor {
@@ -457,5 +631,23 @@ final class BurekButton: NSControl {
         case .primary:
             return Design.primaryText
         }
+    }
+
+    override func isAccessibilityElement() -> Bool {
+        true
+    }
+
+    override func accessibilityRole() -> NSAccessibility.Role? {
+        .button
+    }
+
+    override func accessibilityLabel() -> String? {
+        title
+    }
+
+    override func accessibilityPerformPress() -> Bool {
+        guard isEnabled else { return false }
+        sendAction(action, to: target)
+        return true
     }
 }

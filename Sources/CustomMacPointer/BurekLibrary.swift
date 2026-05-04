@@ -5,6 +5,7 @@ enum BurekLibrary {
         let directories = candidateDirectories()
         let supportedExtensions = Set(["png", "jpg", "jpeg", "heic", "tif", "tiff", "webp"])
         let fileManager = FileManager.default
+        let metadata = loadMetadata(in: directories)
 
         let imageURLs = directories.flatMap { directory -> [URL] in
             guard let urls = try? fileManager.contentsOfDirectory(
@@ -28,34 +29,34 @@ enum BurekLibrary {
                 }
 
                 let fileName = url.deletingPathExtension().lastPathComponent
-                return CursorArtwork(name: displayName(for: fileName), image: image)
+                let displayName = metadata[url.lastPathComponent] ?? displayName(for: fileName)
+                return CursorArtwork(name: displayName, image: image)
             }
     }
 
-    private static func displayName(for fileName: String) -> String {
-        let names = [
-            "17458495290": "Zlati burek",
-            "6_b1": "Klasični burek",
-            "A92499-BUREK-MALI-MOTANI-S-MESOM": "Mali motani mesni",
-            "AA71374D-250B-4B72-B3DB-ABCBAD234174_grande": "Hrustljavi zavitek",
-            "burek-jabolcni": "Jabolčni burek",
-            "burek-motani-s-mesom-250g": "Motani mesni",
-            "burek-motani-sir-spinat-150g": "Sir in špinača",
-            "burek-pecjak-jabolcni": "Pečjak jabolčni",
-            "burek-with-pumpkin-filling-150-gr": "Bučni burek",
-            "mesni": "Mesni burek",
-            "mesni-1": "Mesni klasik",
-            "pizza-burek": "Pizza burek",
-            "pngtree-burek-meat-closeup-fat-png-image_14672347": "Mesni close-up",
-            "puno-mesnoga": "Puno mesnoga",
-            "sirni": "Sirni burek",
-            "sirni-1": "Sirni klasik"
-        ]
+    private struct MetadataEntry: Decodable {
+        let filename: String
+        let name: String
+        let source: String?
+    }
 
-        if let displayName = names[fileName] {
-            return displayName
+    private static func loadMetadata(in directories: [URL]) -> [String: String] {
+        let decoder = JSONDecoder()
+
+        return directories.reduce(into: [:]) { namesByFilename, directory in
+            let metadataURL = directory.appendingPathComponent("metadata.json")
+            guard let data = try? Data(contentsOf: metadataURL),
+                  let entries = try? decoder.decode([MetadataEntry].self, from: data) else {
+                return
+            }
+
+            for entry in entries {
+                namesByFilename[entry.filename] = entry.name
+            }
         }
+    }
 
+    private static func displayName(for fileName: String) -> String {
         return fileName
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")

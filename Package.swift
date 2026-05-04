@@ -9,7 +9,10 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "CustomMacPointer"
+            name: "CustomMacPointer",
+            resources: [
+                .copy("Resources/Bureks")
+            ]
         )
     ]
 )

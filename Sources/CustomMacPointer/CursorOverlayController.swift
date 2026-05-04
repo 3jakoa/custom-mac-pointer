@@ -6,8 +6,14 @@ final class CursorOverlayController {
     private let panel: NSPanel
     private let imageView: NSImageView
     private var timer: Timer?
+    private var globalClickMonitor: Any?
+    private var localClickMonitor: Any?
     private var settings = CursorSettings()
     private var isCursorHidden = false
+    private var wasMouseButtonDown = false
+    private var lastRegisteredClickTime: TimeInterval = 0
+    private var floatingAnimationStartTime: TimeInterval = 0
+    var onPointerClick: (() -> Void)?
 
     var isRunning: Bool {
         timer != nil
@@ -36,6 +42,11 @@ final class CursorOverlayController {
 
     func update(settings: CursorSettings) {
         self.settings = settings
+        guard settings.canRenderPointer else {
+            imageView.image = nil
+            return
+        }
+
         let image = CursorImageFactory.image(for: settings)
         let size = image.size
 
@@ -44,18 +55,24 @@ final class CursorOverlayController {
         panel.setContentSize(size)
 
         if isRunning {
+            syncCursorVisibility()
             positionPanel()
         }
     }
 
     func start() {
         guard timer == nil else { return }
-        hideSystemCursor()
+        guard settings.canRenderPointer else { return }
+        syncCursorVisibility()
         panel.orderFrontRegardless()
+        floatingAnimationStartTime = ProcessInfo.processInfo.systemUptime
         positionPanel()
+        wasMouseButtonDown = isMouseButtonDown()
+        lastRegisteredClickTime = 0
+        installClickMonitors()
 
         timer = Timer.scheduledTimer(
-            timeInterval: 1.0 / 120.0,
+            timeInterval: 1.0 / 240.0,
             target: self,
             selector: #selector(timerFired),
             userInfo: nil,
@@ -69,6 +86,7 @@ final class CursorOverlayController {
     func stop() {
         timer?.invalidate()
         timer = nil
+        removeClickMonitors()
         panel.orderOut(nil)
         showSystemCursor()
     }
@@ -76,17 +94,80 @@ final class CursorOverlayController {
     private func positionPanel() {
         let mouse = NSEvent.mouseLocation
         let size = panel.frame.size
-        let hotspot = settings.hotspot
-        let origin = CGPoint(
-            x: mouse.x - hotspot.x,
-            y: mouse.y - (size.height - hotspot.y)
-        )
+        let origin: CGPoint
+
+        switch settings.mode {
+        case .pointer:
+            let hotspot = settings.hotspot
+            origin = CGPoint(
+                x: mouse.x - hotspot.x,
+                y: mouse.y - (size.height - hotspot.y)
+            )
+        case .floating:
+            let elapsed = ProcessInfo.processInfo.systemUptime - floatingAnimationStartTime
+            let phase = elapsed * 2 * Double.pi / 1.35
+            let floatX = CGFloat(cos(phase * 0.7) * 3)
+            let floatY = CGFloat(sin(phase) * 6)
+
+            origin = CGPoint(
+                x: mouse.x + 8 + floatX,
+                y: mouse.y - size.height - 8 + floatY
+            )
+        }
 
         panel.setFrameOrigin(origin)
     }
 
     @objc private func timerFired() {
         positionPanel()
+
+        let isButtonDown = isMouseButtonDown()
+        if isButtonDown && !wasMouseButtonDown {
+            registerPointerClick()
+        }
+        wasMouseButtonDown = isButtonDown
+    }
+
+    private func isMouseButtonDown() -> Bool {
+        NSEvent.pressedMouseButtons != 0 ||
+            CGEventSource.buttonState(.hidSystemState, button: .left) ||
+            CGEventSource.buttonState(.hidSystemState, button: .right) ||
+            CGEventSource.buttonState(.hidSystemState, button: .center)
+    }
+
+    private func installClickMonitors() {
+        removeClickMonitors()
+
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] _ in
+            Task { @MainActor in
+                self?.registerPointerClick()
+            }
+        }
+
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+            self?.registerPointerClick()
+            return event
+        }
+    }
+
+    private func removeClickMonitors() {
+        if let globalClickMonitor {
+            NSEvent.removeMonitor(globalClickMonitor)
+            self.globalClickMonitor = nil
+        }
+
+        if let localClickMonitor {
+            NSEvent.removeMonitor(localClickMonitor)
+            self.localClickMonitor = nil
+        }
+    }
+
+    private func registerPointerClick() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastRegisteredClickTime > 0.04 else { return }
+        lastRegisteredClickTime = now
+        onPointerClick?()
     }
 
     private func hideSystemCursor() {
@@ -99,5 +180,14 @@ final class CursorOverlayController {
         guard isCursorHidden else { return }
         CGDisplayShowCursor(CGMainDisplayID())
         isCursorHidden = false
+    }
+
+    private func syncCursorVisibility() {
+        switch settings.mode {
+        case .pointer:
+            hideSystemCursor()
+        case .floating:
+            showSystemCursor()
+        }
     }
 }

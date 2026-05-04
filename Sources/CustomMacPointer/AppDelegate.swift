@@ -4,7 +4,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private let overlayController = CursorOverlayController()
-    private let state = AppState()
+    private let state = AppState(boreks: BurekLibrary.loadBundledBureks())
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -12,9 +12,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let viewController = MainViewController(state: state, overlayController: overlayController)
         let window = NSWindow(contentViewController: viewController)
-        window.title = "Custom Mac Pointer"
-        window.setContentSize(NSSize(width: 430, height: 430))
-        window.minSize = NSSize(width: 390, height: 390)
+        window.title = "Burek Mac Pointer"
+        window.appearance = NSAppearance(named: .aqua)
+        window.setContentSize(NSSize(width: 380, height: 574))
+        window.minSize = NSSize(width: 380, height: 574)
+        window.maxSize = NSSize(width: 380, height: 574)
+        window.backgroundColor = Design.cream
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
+        window.styleMask.remove(.resizable)
+        window.isMovableByWindowBackground = true
         window.center()
         window.makeKeyAndOrderFront(nil)
         self.window = window
@@ -32,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(
-            withTitle: "Quit Custom Mac Pointer",
+            withTitle: "Quit Burek Mac Pointer",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

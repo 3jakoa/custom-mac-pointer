@@ -2,7 +2,7 @@ import AppKit
 
 enum CursorImageFactory {
     static func image(for settings: CursorSettings) -> NSImage {
-        let size = max(32, min(180, settings.size))
+        let size = max(20, min(250, settings.size))
         let image = NSImage(size: NSSize(width: size, height: size))
         image.lockFocus()
 

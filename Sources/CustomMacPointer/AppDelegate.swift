@@ -14,10 +14,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let window = NSWindow(contentViewController: viewController)
         window.title = "Burek Mac Pointer"
         window.appearance = NSAppearance(named: .aqua)
-        window.setContentSize(NSSize(width: 430, height: 430))
-        window.minSize = NSSize(width: 390, height: 410)
-        window.maxSize = NSSize(width: 430, height: 430)
+        window.setContentSize(NSSize(width: 380, height: 574))
+        window.minSize = NSSize(width: 380, height: 574)
+        window.maxSize = NSSize(width: 380, height: 574)
+        window.backgroundColor = Design.cream
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
         window.styleMask.remove(.resizable)
+        window.isMovableByWindowBackground = true
         window.center()
         window.makeKeyAndOrderFront(nil)
         self.window = window

@@ -5,8 +5,14 @@ struct CursorArtwork {
     let image: NSImage
 }
 
+enum CursorMode {
+    case floating
+    case pointer
+}
+
 struct CursorSettings {
-    var size: CGFloat = 72
+    var size: CGFloat = 106
+    var mode: CursorMode = .floating
     var boreks: [CursorArtwork] = []
     var activeBorekIndex = 0
 

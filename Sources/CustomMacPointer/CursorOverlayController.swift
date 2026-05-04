@@ -54,6 +54,7 @@ final class CursorOverlayController {
         panel.setContentSize(size)
 
         if isRunning {
+            syncCursorVisibility()
             positionPanel()
         }
     }
@@ -61,7 +62,7 @@ final class CursorOverlayController {
     func start() {
         guard timer == nil else { return }
         guard settings.canRenderPointer else { return }
-        hideSystemCursor()
+        syncCursorVisibility()
         panel.orderFrontRegardless()
         positionPanel()
         wasMouseButtonDown = isMouseButtonDown()
@@ -91,11 +92,21 @@ final class CursorOverlayController {
     private func positionPanel() {
         let mouse = NSEvent.mouseLocation
         let size = panel.frame.size
-        let hotspot = settings.hotspot
-        let origin = CGPoint(
-            x: mouse.x - hotspot.x,
-            y: mouse.y - (size.height - hotspot.y)
-        )
+        let origin: CGPoint
+
+        switch settings.mode {
+        case .pointer:
+            let hotspot = settings.hotspot
+            origin = CGPoint(
+                x: mouse.x - hotspot.x,
+                y: mouse.y - (size.height - hotspot.y)
+            )
+        case .floating:
+            origin = CGPoint(
+                x: mouse.x + 18,
+                y: mouse.y - size.height - 18
+            )
+        }
 
         panel.setFrameOrigin(origin)
     }
@@ -162,5 +173,14 @@ final class CursorOverlayController {
         guard isCursorHidden else { return }
         CGDisplayShowCursor(CGMainDisplayID())
         isCursorHidden = false
+    }
+
+    private func syncCursorVisibility() {
+        switch settings.mode {
+        case .pointer:
+            hideSystemCursor()
+        case .floating:
+            showSystemCursor()
+        }
     }
 }

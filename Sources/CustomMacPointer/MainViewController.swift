@@ -5,12 +5,13 @@ final class MainViewController: NSViewController {
     private let overlayController: CursorOverlayController
 
     private let previewView = CursorPreviewView()
-    private let startButton = NSButton(title: "Start Burek", target: nil, action: nil)
-    private let stopButton = NSButton(title: "Stop Pointer", target: nil, action: nil)
-    private let sizeSlider = NSSlider(value: 72, minValue: 32, maxValue: 180, target: nil, action: nil)
-    private let sizeValueLabel = NSTextField(labelWithString: "72 px")
-    private let libraryLabel = NSTextField(labelWithString: "No Bureks bundled")
-    private let statusLabel = NSTextField(labelWithString: "Pointer overlay is off")
+    private let startButton = BurekButton(title: "Start Burek", style: .ghost)
+    private let stopButton = BurekButton(title: "Stop Burek", style: .primary)
+    private let sizeSlider = BurekSizeSlider()
+    private let modeControl = BurekModeControl()
+    private let sizeValueLabel = NSTextField(labelWithString: "106 px")
+    private let libraryChip = StatusChipView()
+    private let statusLine = StatusLineView()
 
     init(state: AppState, overlayController: CursorOverlayController) {
         self.state = state
@@ -26,7 +27,7 @@ final class MainViewController: NSViewController {
         view = NSView()
         view.appearance = NSAppearance(named: .aqua)
         view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor(red: 0.98, green: 0.86, blue: 0.58, alpha: 1).cgColor
+        view.layer?.backgroundColor = Design.cream.cgColor
     }
 
     override func viewDidLoad() {
@@ -38,7 +39,7 @@ final class MainViewController: NSViewController {
         overlayController.onPointerClick = { [weak self] in
             guard let self else { return }
             self.state.advanceBorek()
-            self.statusLabel.stringValue = self.runningStatusText()
+            self.statusLine.text = self.runningStatusText(for: self.state.settings)
         }
 
         state.onChange = { [weak self] settings in
@@ -51,83 +52,196 @@ final class MainViewController: NSViewController {
     private func buildLayout() {
         let stack = NSStackView()
         stack.orientation = .vertical
-        stack.alignment = .centerX
-        stack.spacing = 16
-        stack.edgeInsets = NSEdgeInsets(top: 28, left: 24, bottom: 24, right: 24)
+        stack.alignment = .width
+        stack.distribution = .fill
+        stack.spacing = 0
         stack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stack)
 
-        let title = NSTextField(labelWithString: "Burek Mac Pointer")
-        title.font = .systemFont(ofSize: 28, weight: .heavy)
-        title.textColor = NSColor(red: 0.32, green: 0.16, blue: 0.07, alpha: 1)
-        title.alignment = .center
-
-        let subtitle = NSTextField(labelWithString: "freshly baked cursor chaos")
-        subtitle.font = .systemFont(ofSize: 13, weight: .semibold)
-        subtitle.textColor = NSColor(red: 0.05, green: 0.31, blue: 0.22, alpha: 1)
-        subtitle.alignment = .center
-
-        previewView.translatesAutoresizingMaskIntoConstraints = false
-
-        libraryLabel.font = .systemFont(ofSize: 12)
-        libraryLabel.textColor = NSColor(red: 0.45, green: 0.25, blue: 0.12, alpha: 1)
-        libraryLabel.alignment = .center
-        libraryLabel.lineBreakMode = .byTruncatingMiddle
-        libraryLabel.maximumNumberOfLines = 1
-
-        statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.textColor = NSColor(red: 0.36, green: 0.19, blue: 0.09, alpha: 1)
-        statusLabel.alignment = .center
-
-        sizeValueLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
-        sizeValueLabel.textColor = NSColor(red: 0.36, green: 0.19, blue: 0.09, alpha: 1)
-        sizeValueLabel.alignment = .right
-
-        let sizeTitle = NSTextField(labelWithString: "Burek size")
-        sizeTitle.font = .systemFont(ofSize: 12, weight: .semibold)
-        sizeTitle.textColor = NSColor(red: 0.45, green: 0.25, blue: 0.12, alpha: 1)
-
-        let sizeRow = NSStackView(views: [sizeTitle, sizeSlider, sizeValueLabel])
-        sizeRow.orientation = .horizontal
-        sizeRow.alignment = .centerY
-        sizeRow.spacing = 10
-
-        let buttonRow = NSStackView(views: [startButton, stopButton])
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
-        buttonRow.spacing = 12
-
-        configureButton(startButton, color: NSColor(red: 0.13, green: 0.45, blue: 0.32, alpha: 1))
-        configureButton(stopButton, color: NSColor(red: 0.72, green: 0.24, blue: 0.11, alpha: 1))
-
-        stack.addArrangedSubview(title)
-        stack.addArrangedSubview(subtitle)
-        stack.addArrangedSubview(libraryLabel)
-        stack.addArrangedSubview(previewView)
-        stack.addArrangedSubview(sizeRow)
-        stack.addArrangedSubview(buttonRow)
-        stack.addArrangedSubview(statusLabel)
+        stack.addArrangedSubview(makeTitleBar())
+        stack.addArrangedSubview(makeHeader())
+        stack.addArrangedSubview(makeStatusBar())
+        stack.addArrangedSubview(makePreviewSection())
+        stack.addArrangedSubview(makeControlsSection())
 
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             stack.topAnchor.constraint(equalTo: view.topAnchor),
-            stack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            previewView.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -44),
-            previewView.heightAnchor.constraint(equalToConstant: 220),
-            sizeRow.widthAnchor.constraint(equalTo: stack.widthAnchor, constant: -44),
-            sizeSlider.widthAnchor.constraint(equalToConstant: 210),
-            sizeValueLabel.widthAnchor.constraint(equalToConstant: 54),
-            startButton.widthAnchor.constraint(equalToConstant: 140),
-            stopButton.widthAnchor.constraint(equalToConstant: 140),
-            startButton.heightAnchor.constraint(equalToConstant: 36),
-            stopButton.heightAnchor.constraint(equalToConstant: 36)
+            stack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+
+    private func makeTitleBar() -> NSView {
+        let section = SectionView()
+        section.borderBottom = true
+        section.translatesAutoresizingMaskIntoConstraints = false
+
+        let title = NSTextField(labelWithString: "Burek Mac Pointer")
+        title.translatesAutoresizingMaskIntoConstraints = false
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+        title.textColor = NSColor(red: 74 / 255, green: 46 / 255, blue: 26 / 255, alpha: 0.75)
+        title.alignment = .center
+
+        section.addSubview(title)
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 42),
+            title.centerXAnchor.constraint(equalTo: section.centerXAnchor),
+            title.centerYAnchor.constraint(equalTo: section.centerYAnchor, constant: 1)
+        ])
+
+        return section
+    }
+
+    private func makeHeader() -> NSView {
+        let section = AppHeaderView()
+        section.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 85)
+        ])
+
+        return section
+    }
+
+    private func makeStatusBar() -> NSView {
+        let section = SectionView()
+        section.borderBottom = true
+        section.borderAlpha = 0.13
+        section.translatesAutoresizingMaskIntoConstraints = false
+        section.addSubview(libraryChip)
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 45),
+            libraryChip.leadingAnchor.constraint(equalTo: section.leadingAnchor, constant: 24),
+            libraryChip.trailingAnchor.constraint(lessThanOrEqualTo: section.trailingAnchor, constant: -24),
+            libraryChip.centerYAnchor.constraint(equalTo: section.centerYAnchor)
+        ])
+
+        return section
+    }
+
+    private func makePreviewSection() -> NSView {
+        let section = SectionView()
+        section.translatesAutoresizingMaskIntoConstraints = false
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        section.addSubview(previewView)
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 208),
+            previewView.leadingAnchor.constraint(equalTo: section.leadingAnchor, constant: 20),
+            previewView.trailingAnchor.constraint(equalTo: section.trailingAnchor, constant: -20),
+            previewView.topAnchor.constraint(equalTo: section.topAnchor, constant: 14),
+            previewView.heightAnchor.constraint(equalToConstant: 180)
+        ])
+
+        return section
+    }
+
+    private func makeControlsSection() -> NSView {
+        let section = SectionView()
+        section.borderTop = true
+        section.borderAlpha = 0.13
+        section.translatesAutoresizingMaskIntoConstraints = false
+
+        let controls = NSStackView()
+        controls.translatesAutoresizingMaskIntoConstraints = false
+        controls.orientation = .vertical
+        controls.alignment = .width
+        controls.spacing = 16
+
+        controls.addArrangedSubview(makeSizeRow())
+        controls.addArrangedSubview(makeModeRow())
+        controls.addArrangedSubview(makeButtonRow())
+        controls.addArrangedSubview(statusLine)
+        section.addSubview(controls)
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 194),
+            controls.leadingAnchor.constraint(equalTo: section.leadingAnchor, constant: 24),
+            controls.trailingAnchor.constraint(equalTo: section.trailingAnchor, constant: -24),
+            controls.topAnchor.constraint(equalTo: section.topAnchor, constant: 18)
+        ])
+
+        return section
+    }
+
+    private func makeSizeRow() -> NSView {
+        let label = controlLabel("Burek size")
+        sizeSlider.translatesAutoresizingMaskIntoConstraints = false
+
+        sizeValueLabel.translatesAutoresizingMaskIntoConstraints = false
+        sizeValueLabel.font = .monospacedDigitSystemFont(ofSize: 12.5, weight: .semibold)
+        sizeValueLabel.textColor = Design.brown
+        sizeValueLabel.alignment = .right
+
+        let row = NSStackView(views: [label, sizeSlider, sizeValueLabel])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 12
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            label.widthAnchor.constraint(equalToConstant: 78),
+            sizeValueLabel.widthAnchor.constraint(equalToConstant: 44),
+            row.heightAnchor.constraint(equalToConstant: 24)
+        ])
+
+        return row
+    }
+
+    private func makeModeRow() -> NSView {
+        let label = controlLabel("Mode")
+        modeControl.translatesAutoresizingMaskIntoConstraints = false
+
+        let row = NSStackView(views: [label, modeControl])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 12
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            label.widthAnchor.constraint(equalToConstant: 78),
+            modeControl.heightAnchor.constraint(equalToConstant: 30),
+            row.heightAnchor.constraint(equalToConstant: 30)
+        ])
+
+        return row
+    }
+
+    private func makeButtonRow() -> NSView {
+        let row = NSStackView(views: [startButton, stopButton])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.distribution = .fillEqually
+        row.spacing = 10
+        row.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            startButton.heightAnchor.constraint(equalToConstant: 38),
+            stopButton.heightAnchor.constraint(equalToConstant: 38),
+            row.heightAnchor.constraint(equalToConstant: 40)
+        ])
+
+        return row
+    }
+
+    private func controlLabel(_ text: String) -> NSTextField {
+        let label = NSTextField(labelWithString: text)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = .systemFont(ofSize: 13, weight: .medium)
+        label.textColor = Design.brownMid
+        label.alignment = .left
+        return label
     }
 
     private func wireActions() {
         sizeSlider.target = self
         sizeSlider.action = #selector(sizeChanged)
+
+        modeControl.target = self
+        modeControl.action = #selector(modeChanged)
 
         startButton.target = self
         startButton.action = #selector(startPointer)
@@ -138,28 +252,32 @@ final class MainViewController: NSViewController {
 
     private func refreshUI() {
         let settings = state.settings
-        sizeSlider.doubleValue = Double(settings.size)
+        sizeSlider.value = settings.size
+        modeControl.mode = settings.mode
         previewView.settings = settings
         overlayController.update(settings: settings)
         refreshControls(for: settings)
     }
 
     private func refreshControls(for settings: CursorSettings) {
-        libraryLabel.stringValue = libraryText(for: settings)
+        libraryChip.text = libraryText(for: settings)
         sizeValueLabel.stringValue = "\(Int(settings.size.rounded())) px"
+        sizeSlider.value = settings.size
+        modeControl.mode = settings.mode
         startButton.isEnabled = settings.canRenderPointer && !overlayController.isRunning
         stopButton.isEnabled = overlayController.isRunning
-    }
-
-    private func configureButton(_ button: NSButton, color: NSColor) {
-        button.bezelStyle = .rounded
-        button.font = .systemFont(ofSize: 14, weight: .semibold)
-        button.contentTintColor = color
+        statusLine.text = overlayController.isRunning ? runningStatusText(for: settings) : "Burek is stopped"
     }
 
     @objc private func sizeChanged() {
         var settings = state.settings
-        settings.size = CGFloat(sizeSlider.doubleValue.rounded())
+        settings.size = sizeSlider.value
+        state.settings = settings
+    }
+
+    @objc private func modeChanged() {
+        var settings = state.settings
+        settings.mode = modeControl.mode
         state.settings = settings
     }
 
@@ -174,13 +292,11 @@ final class MainViewController: NSViewController {
 
         overlayController.start()
         refreshControls(for: state.settings)
-        statusLabel.stringValue = runningStatusText()
     }
 
     @objc private func stopPointer() {
         overlayController.stop()
         refreshControls(for: state.settings)
-        statusLabel.stringValue = "Pointer overlay is off"
     }
 
     private func libraryText(for settings: CursorSettings) -> String {
@@ -192,8 +308,13 @@ final class MainViewController: NSViewController {
         return "\(settings.boreks.count) Bureks loaded - \(activeName)"
     }
 
-    private func runningStatusText() -> String {
-        "Burek pointer is running"
+    private func runningStatusText(for settings: CursorSettings) -> String {
+        switch settings.mode {
+        case .floating:
+            return "Burek is floating near your pointer"
+        case .pointer:
+            return "Burek is following your pointer"
+        }
     }
 
     private func presentAlert(title: String, message: String) {

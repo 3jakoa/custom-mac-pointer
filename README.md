@@ -46,4 +46,4 @@ build/Burek Mac Pointer.app
 swift run
 ```
 
-If the pointer overlay is running, use the **Stop Pointer** button before quitting. The app also restores the system cursor during normal termination.
+If the pointer overlay is running, use the **Stop Burek** button before quitting. The app also restores the system cursor during normal termination.

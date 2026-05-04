@@ -12,6 +12,7 @@ final class CursorOverlayController {
     private var isCursorHidden = false
     private var wasMouseButtonDown = false
     private var lastRegisteredClickTime: TimeInterval = 0
+    private var floatingAnimationStartTime: TimeInterval = 0
     var onPointerClick: (() -> Void)?
 
     var isRunning: Bool {
@@ -64,6 +65,7 @@ final class CursorOverlayController {
         guard settings.canRenderPointer else { return }
         syncCursorVisibility()
         panel.orderFrontRegardless()
+        floatingAnimationStartTime = ProcessInfo.processInfo.systemUptime
         positionPanel()
         wasMouseButtonDown = isMouseButtonDown()
         lastRegisteredClickTime = 0
@@ -102,9 +104,14 @@ final class CursorOverlayController {
                 y: mouse.y - (size.height - hotspot.y)
             )
         case .floating:
+            let elapsed = ProcessInfo.processInfo.systemUptime - floatingAnimationStartTime
+            let phase = elapsed * 2 * Double.pi / 1.35
+            let floatX = CGFloat(cos(phase * 0.7) * 3)
+            let floatY = CGFloat(sin(phase) * 6)
+
             origin = CGPoint(
-                x: mouse.x + 18,
-                y: mouse.y - size.height - 18
+                x: mouse.x + 8 + floatX,
+                y: mouse.y - size.height - 8 + floatY
             )
         }
 

@@ -3,13 +3,31 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
+    private var statusItem: NSStatusItem?
     private let overlayController = CursorOverlayController()
     private let state = AppState(boreks: BurekLibrary.loadBundledBureks())
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         buildMenu()
+        buildStatusItem()
+        showSettingsWindow(activate: true)
+    }
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showSettingsWindow(activate: true)
+        return true
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        overlayController.stop()
+    }
+
+    private func makeSettingsWindow() -> NSWindow {
         let viewController = MainViewController(state: state, overlayController: overlayController)
         let window = NSWindow(contentViewController: viewController)
         window.title = "Burek Mac Pointer"
@@ -23,15 +41,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.styleMask.insert(.fullSizeContentView)
         window.styleMask.remove(.resizable)
         window.isMovableByWindowBackground = true
+        window.isReleasedWhenClosed = false
         window.center()
-        window.makeKeyAndOrderFront(nil)
-        self.window = window
 
-        NSApp.activate(ignoringOtherApps: true)
+        return window
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
-        overlayController.stop()
+    private func showSettingsWindow(activate: Bool) {
+        if window == nil {
+            window = makeSettingsWindow()
+        }
+
+        guard let window else { return }
+        if !window.isVisible {
+            window.center()
+        }
+        window.makeKeyAndOrderFront(nil)
+
+        if activate {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     private func buildMenu() {
@@ -39,6 +68,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
+        appMenu.addItem(
+            withTitle: "Show Burek Controls",
+            action: #selector(showSettingsWindowFromMenu(_:)),
+            keyEquivalent: "0"
+        )
+        appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(
             withTitle: "Quit Burek Mac Pointer",
             action: #selector(NSApplication.terminate(_:)),
@@ -59,5 +94,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mainMenu.addItem(editMenuItem)
 
         NSApp.mainMenu = mainMenu
+    }
+
+    private func buildStatusItem() {
+        let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem.button?.title = "Burek"
+        statusItem.button?.toolTip = "Burek Mac Pointer"
+
+        let menu = NSMenu()
+        menu.addItem(
+            withTitle: "Show Burek Controls",
+            action: #selector(showSettingsWindowFromMenu(_:)),
+            keyEquivalent: ""
+        )
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(
+            withTitle: "Quit Burek Mac Pointer",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        statusItem.menu = menu
+
+        self.statusItem = statusItem
+    }
+
+    @objc private func showSettingsWindowFromMenu(_ sender: Any?) {
+        showSettingsWindow(activate: true)
     }
 }

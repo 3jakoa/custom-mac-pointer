@@ -22,6 +22,12 @@ Sources/CustomMacPointer/Resources/Bureks
 
 Supported formats are PNG, JPG, JPEG, HEIC, TIFF, and WEBP. Files are loaded alphabetically.
 
+Optional display names can be added to:
+
+```text
+Sources/CustomMacPointer/Resources/Bureks/metadata.json
+```
+
 ## Build
 
 ```sh

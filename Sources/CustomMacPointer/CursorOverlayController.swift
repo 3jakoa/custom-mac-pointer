@@ -72,7 +72,7 @@ final class CursorOverlayController {
         installClickMonitors()
 
         timer = Timer.scheduledTimer(
-            timeInterval: 1.0 / 240.0,
+            timeInterval: 1.0 / 60.0,
             target: self,
             selector: #selector(timerFired),
             userInfo: nil,

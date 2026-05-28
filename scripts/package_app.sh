@@ -15,6 +15,7 @@ rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp ".build/$BUILD_CONFIG/CustomMacPointer" "$MACOS_DIR/CustomMacPointer"
 cp "Resources/Info.plist" "$CONTENTS_DIR/Info.plist"
+cp "Resources/BurekCursor.icns" "$RESOURCES_DIR/BurekCursor.icns"
 if [ -d "$ROOT_DIR/Sources/CustomMacPointer/Resources/Bureks" ]; then
     cp -R "$ROOT_DIR/Sources/CustomMacPointer/Resources/Bureks" "$RESOURCES_DIR/Bureks"
 fi

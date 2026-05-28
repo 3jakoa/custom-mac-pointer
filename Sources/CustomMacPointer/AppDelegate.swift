@@ -6,12 +6,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private let overlayController = CursorOverlayController()
     private let state = AppState(boreks: BurekLibrary.loadBundledBureks())
+    private let licenseController = AppLicenseController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         buildMenu()
         buildStatusItem()
         showSettingsWindow(activate: true)
+        Task {
+            await licenseController.validateStoredLicense()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -28,13 +32,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeSettingsWindow() -> NSWindow {
-        let viewController = MainViewController(state: state, overlayController: overlayController)
+        let viewController = MainViewController(
+            state: state,
+            overlayController: overlayController,
+            licenseController: licenseController
+        )
         let window = NSWindow(contentViewController: viewController)
         window.title = "Burek Cursor"
         window.appearance = NSAppearance(named: .aqua)
-        window.setContentSize(NSSize(width: 380, height: 574))
-        window.minSize = NSSize(width: 380, height: 574)
-        window.maxSize = NSSize(width: 380, height: 574)
+        window.setContentSize(NSSize(width: 380, height: 666))
+        window.minSize = NSSize(width: 380, height: 666)
+        window.maxSize = NSSize(width: 380, height: 666)
         window.backgroundColor = Design.cream
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true

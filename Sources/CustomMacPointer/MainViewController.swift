@@ -77,7 +77,7 @@ final class MainViewController: NSViewController {
         section.borderBottom = true
         section.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = NSTextField(labelWithString: "Burek Mac Pointer")
+        let title = NSTextField(labelWithString: "Burek Cursor")
         title.translatesAutoresizingMaskIntoConstraints = false
         title.font = .systemFont(ofSize: 13, weight: .semibold)
         title.textColor = NSColor(red: 74 / 255, green: 46 / 255, blue: 26 / 255, alpha: 0.75)

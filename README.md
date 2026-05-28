@@ -1,6 +1,6 @@
-# Burek Mac Pointer
+# Burek Cursor
 
-A native macOS prototype for running a Burek pointer overlay.
+A native macOS app for running a Burek cursor overlay.
 
 macOS does not provide a public user setting or stable API for replacing the built-in system cursor artwork globally. This app uses a reversible overlay approach: when enabled, it hides the default cursor with CoreGraphics and draws a transparent always-on-top AppKit panel at the current mouse location.
 
@@ -43,7 +43,7 @@ sh scripts/package_app.sh
 The packaged app is written to:
 
 ```text
-build/Burek Mac Pointer.app
+build/Burek Cursor.app
 ```
 
 ## Run From Source

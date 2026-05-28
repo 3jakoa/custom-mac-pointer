@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeSettingsWindow() -> NSWindow {
         let viewController = MainViewController(state: state, overlayController: overlayController)
         let window = NSWindow(contentViewController: viewController)
-        window.title = "Burek Mac Pointer"
+        window.title = "Burek Cursor"
         window.appearance = NSAppearance(named: .aqua)
         window.setContentSize(NSSize(width: 380, height: 574))
         window.minSize = NSSize(width: 380, height: 574)
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(
-            withTitle: "Quit Burek Mac Pointer",
+            withTitle: "Quit Burek Cursor",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -99,7 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "Burek"
-        statusItem.button?.toolTip = "Burek Mac Pointer"
+        statusItem.button?.toolTip = "Burek Cursor"
 
         let menu = NSMenu()
         menu.addItem(
@@ -109,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         menu.addItem(NSMenuItem.separator())
         menu.addItem(
-            withTitle: "Quit Burek Mac Pointer",
+            withTitle: "Quit Burek Cursor",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

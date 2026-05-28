@@ -5,15 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>Burek Mac Pointer</string>
+    <string>Burek Cursor</string>
     <key>CFBundleExecutable</key>
     <string>CustomMacPointer</string>
     <key>CFBundleIdentifier</key>
-    <string>com.local.burekmacpointer</string>
+    <string>com.burekcursor.app</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Burek Mac Pointer</string>
+    <string>Burek Cursor</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -26,5 +26,9 @@
     <true/>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>SUFeedURL</key>
+    <string>https://api.amore.computer/v1/apps/com.burekcursor.app/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>bsOJkQTeowwviDLkvu2SPtn2guhhdSUcLJ+HIlTSdIg=</string>
 </dict>
 </plist>

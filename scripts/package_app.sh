@@ -3,7 +3,7 @@ set -eu
 
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 BUILD_CONFIG="${1:-debug}"
-APP_DIR="$ROOT_DIR/build/Burek Mac Pointer.app"
+APP_DIR="$ROOT_DIR/build/Burek Cursor.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"

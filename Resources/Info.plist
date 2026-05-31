@@ -30,6 +30,10 @@
     <string>NSApplication</string>
     <key>SUFeedURL</key>
     <string>https://api.amore.computer/v1/apps/com.burekcursor.app/appcast.xml</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
     <key>SUPublicEDKey</key>
     <string>bsOJkQTeowwviDLkvu2SPtn2guhhdSUcLJ+HIlTSdIg=</string>
 </dict>

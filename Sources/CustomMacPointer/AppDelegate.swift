@@ -1,9 +1,15 @@
 import AppKit
+import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private var statusItem: NSStatusItem?
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
     private let overlayController = CursorOverlayController()
     private let state = AppState(boreks: BurekLibrary.loadBundledBureks())
     private let licenseController = AppLicenseController()
@@ -81,6 +87,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(showSettingsWindowFromMenu(_:)),
             keyEquivalent: "0"
         )
+        appMenu.addItem(
+            withTitle: "Check for Updates...",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(
             withTitle: "Quit Burek Cursor",
@@ -115,6 +126,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(showSettingsWindowFromMenu(_:)),
             keyEquivalent: ""
         )
+        menu.addItem(
+            withTitle: "Check for Updates...",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
         menu.addItem(NSMenuItem.separator())
         menu.addItem(
             withTitle: "Quit Burek Cursor",
@@ -128,5 +144,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettingsWindowFromMenu(_ sender: Any?) {
         showSettingsWindow(activate: true)
+    }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        updaterController.checkForUpdates(sender)
     }
 }

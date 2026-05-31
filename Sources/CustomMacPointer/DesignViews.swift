@@ -89,7 +89,7 @@ final class AppHeaderView: SectionView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
 
-        let title = "Burek Mac Pointer"
+        let title = "Burek Cursor"
         let titleAttributes: [NSAttributedString.Key: Any] = [
             .font: Design.displayFont(size: 24, weight: .bold),
             .foregroundColor: Design.brown

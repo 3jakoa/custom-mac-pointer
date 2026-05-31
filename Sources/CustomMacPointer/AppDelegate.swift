@@ -1,17 +1,27 @@
 import AppKit
+import Sparkle
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private var statusItem: NSStatusItem?
+    private let updaterController = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: nil
+    )
     private let overlayController = CursorOverlayController()
     private let state = AppState(boreks: BurekLibrary.loadBundledBureks())
+    private let licenseController = AppLicenseController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         buildMenu()
         buildStatusItem()
         showSettingsWindow(activate: true)
+        Task {
+            await licenseController.validateStoredLicense()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -28,13 +38,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeSettingsWindow() -> NSWindow {
-        let viewController = MainViewController(state: state, overlayController: overlayController)
+        let viewController = MainViewController(
+            state: state,
+            overlayController: overlayController,
+            licenseController: licenseController
+        )
         let window = NSWindow(contentViewController: viewController)
-        window.title = "Burek Mac Pointer"
+        window.title = "Burek Cursor"
         window.appearance = NSAppearance(named: .aqua)
-        window.setContentSize(NSSize(width: 380, height: 574))
-        window.minSize = NSSize(width: 380, height: 574)
-        window.maxSize = NSSize(width: 380, height: 574)
+        window.setContentSize(NSSize(width: 380, height: 666))
+        window.minSize = NSSize(width: 380, height: 666)
+        window.maxSize = NSSize(width: 380, height: 666)
         window.backgroundColor = Design.cream
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
@@ -73,9 +87,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(showSettingsWindowFromMenu(_:)),
             keyEquivalent: "0"
         )
+        appMenu.addItem(
+            withTitle: "Check for Updates...",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(
-            withTitle: "Quit Burek Mac Pointer",
+            withTitle: "Quit Burek Cursor",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -99,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildStatusItem() {
         let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "Burek"
-        statusItem.button?.toolTip = "Burek Mac Pointer"
+        statusItem.button?.toolTip = "Burek Cursor"
 
         let menu = NSMenu()
         menu.addItem(
@@ -107,9 +126,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             action: #selector(showSettingsWindowFromMenu(_:)),
             keyEquivalent: ""
         )
+        menu.addItem(
+            withTitle: "Check for Updates...",
+            action: #selector(checkForUpdates(_:)),
+            keyEquivalent: ""
+        )
         menu.addItem(NSMenuItem.separator())
         menu.addItem(
-            withTitle: "Quit Burek Mac Pointer",
+            withTitle: "Quit Burek Cursor",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )
@@ -120,5 +144,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showSettingsWindowFromMenu(_ sender: Any?) {
         showSettingsWindow(activate: true)
+    }
+
+    @objc private func checkForUpdates(_ sender: Any?) {
+        updaterController.checkForUpdates(sender)
     }
 }

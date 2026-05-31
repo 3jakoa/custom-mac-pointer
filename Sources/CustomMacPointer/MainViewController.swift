@@ -1,21 +1,32 @@
 import AppKit
 
+@MainActor
 final class MainViewController: NSViewController {
     private let state: AppState
     private let overlayController: CursorOverlayController
+    private let licenseController: AppLicenseController
 
     private let previewView = CursorPreviewView()
     private let startButton = BurekButton(title: "Start Burek", style: .ghost)
     private let stopButton = BurekButton(title: "Stop Burek", style: .primary)
+    private let activateLicenseButton = BurekButton(title: "Activate", style: .primary)
+    private let buyLicenseButton = BurekButton(title: "Buy license", style: .ghost)
+    private let licenseStatusLabel = NSTextField(labelWithString: "")
+    private let licenseKeyField = NSTextField(string: "")
     private let sizeSlider = BurekSizeSlider()
     private let modeControl = BurekModeControl()
     private let sizeValueLabel = NSTextField(labelWithString: "106 px")
     private let libraryChip = StatusChipView()
     private let statusLine = StatusLineView()
 
-    init(state: AppState, overlayController: CursorOverlayController) {
+    init(
+        state: AppState,
+        overlayController: CursorOverlayController,
+        licenseController: AppLicenseController
+    ) {
         self.state = state
         self.overlayController = overlayController
+        self.licenseController = licenseController
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -61,6 +72,7 @@ final class MainViewController: NSViewController {
         stack.addArrangedSubview(makeTitleBar())
         stack.addArrangedSubview(makeHeader())
         stack.addArrangedSubview(makeStatusBar())
+        stack.addArrangedSubview(makeLicenseSection())
         stack.addArrangedSubview(makePreviewSection())
         stack.addArrangedSubview(makeControlsSection())
 
@@ -77,7 +89,7 @@ final class MainViewController: NSViewController {
         section.borderBottom = true
         section.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = NSTextField(labelWithString: "Burek Mac Pointer")
+        let title = NSTextField(labelWithString: "Burek Cursor")
         title.translatesAutoresizingMaskIntoConstraints = false
         title.font = .systemFont(ofSize: 13, weight: .semibold)
         title.textColor = NSColor(red: 74 / 255, green: 46 / 255, blue: 26 / 255, alpha: 0.75)
@@ -117,6 +129,77 @@ final class MainViewController: NSViewController {
             libraryChip.leadingAnchor.constraint(equalTo: section.leadingAnchor, constant: 24),
             libraryChip.trailingAnchor.constraint(lessThanOrEqualTo: section.trailingAnchor, constant: -24),
             libraryChip.centerYAnchor.constraint(equalTo: section.centerYAnchor)
+        ])
+
+        return section
+    }
+
+    private func makeLicenseSection() -> NSView {
+        let section = SectionView()
+        section.borderBottom = true
+        section.borderAlpha = 0.13
+        section.translatesAutoresizingMaskIntoConstraints = false
+
+        let title = controlLabel("License")
+        title.font = .systemFont(ofSize: 13, weight: .semibold)
+
+        licenseStatusLabel.translatesAutoresizingMaskIntoConstraints = false
+        licenseStatusLabel.font = .systemFont(ofSize: 12)
+        licenseStatusLabel.textColor = Design.brownLight
+        licenseStatusLabel.lineBreakMode = .byTruncatingTail
+        licenseStatusLabel.maximumNumberOfLines = 1
+
+        let statusRow = NSStackView(views: [title, licenseStatusLabel])
+        statusRow.translatesAutoresizingMaskIntoConstraints = false
+        statusRow.orientation = .horizontal
+        statusRow.alignment = .centerY
+        statusRow.spacing = 12
+
+        licenseKeyField.translatesAutoresizingMaskIntoConstraints = false
+        licenseKeyField.placeholderString = "Paste license key"
+        licenseKeyField.font = .systemFont(ofSize: 13)
+        licenseKeyField.textColor = Design.brown
+        licenseKeyField.bezelStyle = .roundedBezel
+        licenseKeyField.focusRingType = .default
+
+        activateLicenseButton.target = self
+        activateLicenseButton.action = #selector(activateLicense)
+
+        buyLicenseButton.target = self
+        buyLicenseButton.action = #selector(openCheckout)
+
+        let buttonRow = NSStackView(views: [activateLicenseButton, buyLicenseButton])
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+        buttonRow.orientation = .horizontal
+        buttonRow.alignment = .centerY
+        buttonRow.distribution = .fillEqually
+        buttonRow.spacing = 8
+
+        let entryRow = NSStackView(views: [licenseKeyField, buttonRow])
+        entryRow.translatesAutoresizingMaskIntoConstraints = false
+        entryRow.orientation = .horizontal
+        entryRow.alignment = .centerY
+        entryRow.spacing = 10
+
+        let stack = NSStackView(views: [statusRow, entryRow])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.orientation = .vertical
+        stack.alignment = .width
+        stack.spacing = 10
+
+        section.addSubview(stack)
+
+        NSLayoutConstraint.activate([
+            section.heightAnchor.constraint(equalToConstant: 92),
+            stack.leadingAnchor.constraint(equalTo: section.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: section.trailingAnchor, constant: -24),
+            stack.centerYAnchor.constraint(equalTo: section.centerYAnchor),
+            title.widthAnchor.constraint(equalToConstant: 78),
+            licenseKeyField.heightAnchor.constraint(equalToConstant: 30),
+            buttonRow.widthAnchor.constraint(equalToConstant: 168),
+            activateLicenseButton.heightAnchor.constraint(equalToConstant: 30),
+            buyLicenseButton.heightAnchor.constraint(equalToConstant: 30),
+            entryRow.heightAnchor.constraint(equalToConstant: 32)
         ])
 
         return section
@@ -248,6 +331,11 @@ final class MainViewController: NSViewController {
 
         stopButton.target = self
         stopButton.action = #selector(stopPointer)
+
+        licenseController.onStatusChange = { [weak self] _ in
+            self?.refreshLicenseUI()
+            self?.refreshControls(for: self?.state.settings ?? CursorSettings())
+        }
     }
 
     private func refreshUI() {
@@ -256,6 +344,7 @@ final class MainViewController: NSViewController {
         modeControl.mode = settings.mode
         previewView.settings = settings
         overlayController.update(settings: settings)
+        refreshLicenseUI()
         refreshControls(for: settings)
     }
 
@@ -264,9 +353,48 @@ final class MainViewController: NSViewController {
         sizeValueLabel.stringValue = "\(Int(settings.size.rounded())) px"
         sizeSlider.value = settings.size
         modeControl.mode = settings.mode
-        startButton.isEnabled = settings.canRenderPointer && !overlayController.isRunning
+        startButton.isEnabled = settings.canRenderPointer && licenseController.status.canUseApp && !overlayController.isRunning
         stopButton.isEnabled = overlayController.isRunning
-        statusLine.text = overlayController.isRunning ? runningStatusText(for: settings) : "Burek is stopped"
+        if !licenseController.status.canUseApp {
+            statusLine.text = "Activate your license to start Burek"
+        } else {
+            statusLine.text = overlayController.isRunning ? runningStatusText(for: settings) : "Burek is stopped"
+        }
+    }
+
+    private func refreshLicenseUI() {
+        switch licenseController.status {
+        case .checking:
+            licenseStatusLabel.stringValue = "Checking stored license..."
+            licenseKeyField.isEnabled = false
+            activateLicenseButton.isEnabled = false
+            buyLicenseButton.isEnabled = true
+        case .activating:
+            licenseStatusLabel.stringValue = "Activating license..."
+            licenseKeyField.isEnabled = false
+            activateLicenseButton.isEnabled = false
+            buyLicenseButton.isEnabled = false
+        case .licensed(let name):
+            licenseStatusLabel.stringValue = "Active - \(name)"
+            licenseKeyField.isEnabled = false
+            activateLicenseButton.isEnabled = false
+            buyLicenseButton.isEnabled = false
+        case .gracePeriod(let name):
+            licenseStatusLabel.stringValue = "Offline grace period - \(name)"
+            licenseKeyField.isEnabled = false
+            activateLicenseButton.isEnabled = false
+            buyLicenseButton.isEnabled = false
+        case .unlicensed(let message):
+            licenseStatusLabel.stringValue = message ?? "License required"
+            licenseKeyField.isEnabled = true
+            activateLicenseButton.isEnabled = true
+            buyLicenseButton.isEnabled = true
+        case .unavailable(let message):
+            licenseStatusLabel.stringValue = message
+            licenseKeyField.isEnabled = false
+            activateLicenseButton.isEnabled = false
+            buyLicenseButton.isEnabled = true
+        }
     }
 
     @objc private func sizeChanged() {
@@ -282,6 +410,14 @@ final class MainViewController: NSViewController {
     }
 
     @objc private func startPointer() {
+        guard licenseController.status.canUseApp else {
+            presentAlert(
+                title: "License required",
+                message: "Activate Burek Cursor with your license key before starting the pointer overlay."
+            )
+            return
+        }
+
         guard state.settings.canRenderPointer else {
             presentAlert(
                 title: "No pointer artwork",
@@ -297,6 +433,22 @@ final class MainViewController: NSViewController {
     @objc private func stopPointer() {
         overlayController.stop()
         refreshControls(for: state.settings)
+    }
+
+    @objc private func activateLicense() {
+        let licenseKey = licenseKeyField.stringValue
+        Task {
+            await licenseController.activate(licenseKey: licenseKey)
+            if licenseController.status.canUseApp {
+                licenseKeyField.stringValue = ""
+            }
+            refreshLicenseUI()
+            refreshControls(for: state.settings)
+        }
+    }
+
+    @objc private func openCheckout() {
+        licenseController.openCheckout()
     }
 
     private func libraryText(for settings: CursorSettings) -> String {
